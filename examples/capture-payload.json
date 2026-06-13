@@ -1,0 +1,19 @@
+{
+  "repo_path": "/path/to/repo",
+  "vault_path": "/path/to/obsidian-vault",
+  "repo_id": "owner.repo-or-folder-name",
+  "mode": "qa-capture",
+  "question": "Why does the application initialize providers in this order?",
+  "answer": "The order is required because configuration must be loaded before provider registration, and provider registration must happen before runtime session creation.",
+  "related_files": [
+    "src/config.ts:12",
+    "src/providers/index.ts:30"
+  ],
+  "related_symbols": [
+    "loadConfig",
+    "registerProviders"
+  ],
+  "source_tool": "cursor",
+  "confidence": "medium",
+  "status": "verified"
+}
