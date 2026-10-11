@@ -3,7 +3,7 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
-const { execSync } = require('child_process');
+const { execSync, execFileSync } = require('child_process');
 
 const TODAY = new Date().toISOString().slice(0, 10);
 
@@ -31,6 +31,7 @@ Options:
   --source-tool <name>   Source tool name, e.g. wiscode, cursor, vscode-copilot, trae, codex.
   --confidence <level>   high | medium | low.
   --status <status>      verified | needs-verification | draft.
+  --source-commit <sha>  Commit that was actually reviewed; defaults to the checkout HEAD.
   --related-file <item>  Related file, can be repeated. Example: src/a.ts:10.
   --related-symbol <s>   Related symbol, can be repeated.
   --help                 Show this help.
@@ -127,6 +128,9 @@ function normalizePayload(args) {
     source_tool: args['source-tool'] || payload.source_tool,
     confidence: args.confidence || payload.confidence,
     status: args.status || payload.status,
+    source_commit: args['source-commit'] || payload.source_commit,
+    source_captured_at: payload.source_captured_at,
+    source_worktree_dirty: payload.source_worktree_dirty,
     related_files: args['related-file'] || payload.related_files || [],
     related_symbols: args['related-symbol'] || payload.related_symbols || [],
   };
@@ -136,7 +140,12 @@ function normalizePayload(args) {
   merged.mode = merged.mode || 'qa-capture';
   merged.source_tool = merged.source_tool || 'unknown';
   merged.confidence = merged.confidence || 'medium';
-  merged.status = merged.status || (merged.confidence === 'low' ? 'needs-verification' : 'verified');
+  merged.status = merged.status || 'needs-verification';
+  merged.source_commit = resolveGitCommit(merged.repo_path, merged.source_commit || 'HEAD');
+  merged.source_captured_at = merged.source_captured_at || new Date().toISOString();
+  if (merged.source_worktree_dirty === undefined) {
+    merged.source_worktree_dirty = Boolean(runGit(merged.repo_path, 'git status --porcelain'));
+  }
   merged.related_files = Array.isArray(merged.related_files) ? merged.related_files : [merged.related_files].filter(Boolean);
   merged.related_symbols = Array.isArray(merged.related_symbols) ? merged.related_symbols : [merged.related_symbols].filter(Boolean);
 
@@ -154,6 +163,20 @@ function runGit(repoPath, command) {
   try {
     return execSync(command, {
       cwd: repoPath,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    }).trim();
+  } catch (_) {
+    return '';
+  }
+}
+
+function resolveGitCommit(repoPath, ref) {
+  if (typeof ref !== 'string' || ref.startsWith('-') || !/^[A-Za-z0-9._\/-]+$/.test(ref)) {
+    return '';
+  }
+  try {
+    return execFileSync('git', ['-C', repoPath, 'rev-parse', '--verify', `${ref}^{commit}`], {
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'ignore'],
     }).trim();
@@ -236,6 +259,9 @@ related_files: ${yamlArray(payload.related_files)}
 related_symbols: ${yamlArray(payload.related_symbols)}
 related_notes: []
 confidence: ${payload.confidence}
+source_commit: ${JSON.stringify(payload.source_commit || '')}
+source_captured_at: ${JSON.stringify(payload.source_captured_at)}
+source_worktree_dirty: ${Boolean(payload.source_worktree_dirty)}
 ---`;
 }
 
@@ -558,6 +584,9 @@ function bootstrap(payload) {
 
 function capture(payload) {
   requireFields(payload, ['repo_path', 'vault_path']);
+  if (!payload.source_commit) {
+    throw new Error('A Git commit is required to capture repository knowledge');
+  }
   payload.repo_id = payload.repo_id || inferRepoId(payload.repo_path);
   bootstrap(payload);
 

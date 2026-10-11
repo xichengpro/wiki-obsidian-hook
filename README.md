@@ -210,9 +210,11 @@ confidence: low
   "related_symbols": ["ExampleService"],
   "source_tool": "cursor",
   "confidence": "medium",
-  "status": "verified"
+  "status": "needs-verification"
 }
 ```
+
+`capture` 会记录源码仓库当时的完整 `source_commit`、捕获时间以及工作区是否有未提交改动。默认状态为 `needs-verification`；核对证据后再标记为 `verified`。若分析的是指定历史版本，可用 `--source-commit <sha>`，不要把当前 HEAD 写成过去实际阅读的版本。
 
 ### source_tool 建议命名
 
@@ -458,6 +460,10 @@ skills/obsidian-code-knowledge-graph/templates/
 - 未验证内容应标记 `needs-verification`。
 - 已存在相同主题笔记时，应优先更新旧笔记，而不是创建重复笔记。
 - 仓库重构后，应及时更新或标记过期内容。
+
+## 与 Team Code Wiki 结合
+
+如需把选定笔记共享到团队仓库，可在 `team-code-wiki` 项目中运行 `bin/team-code-wiki.js publish`。发布器读取本项目生成的 `source_commit`，按仓库归档并用 Git 记录共享文档的修订；个人 Vault 不会被整体同步。具体参数见 Team Code Wiki 的 README。
 
 ## 后续可扩展方向
 

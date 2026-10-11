@@ -10,7 +10,8 @@
   "scripts": {
     "help": "node ./bin/obsidian-code-atlas.js --help",
     "bootstrap": "node ./bin/obsidian-code-atlas.js bootstrap",
-    "capture": "node ./bin/obsidian-code-atlas.js capture"
+    "capture": "node ./bin/obsidian-code-atlas.js capture",
+    "test": "node --test"
   },
   "engines": {
     "node": ">=16"

@@ -23,6 +23,7 @@ description: 为代码仓库构建并维护 Obsidian 知识图谱，沉淀仓库
 - `answer`：可选，要保存的模型回答或摘要。
 - `mode`：保存模式，可选值包括 `bootstrap`、`update`、`qa-capture`、`decision-capture`、`investigation-capture`。
 - `source_tool`：可选，来源工具标识。默认使用 `manual`；也可以使用 `wiscode`、`cursor`、`vscode-copilot`、`cline`、`continue`、`roo-code`、`trae`、`codex`、`claude-code`、`jetbrains-ai`、`custom-llm` 等。
+- `source_commit`：分析时实际查看的代码 commit。CLI 会记录当前 checkout 的 HEAD；如果分析的是其他版本，应显式传入该版本。
 
 ## 默认行为
 
@@ -74,6 +75,8 @@ node /Users/dubingnan/workCode/xichengpro/wiki-obsidian-hook/bin/obsidian-code-a
 - 只保存未来可复用的知识，不保存每一次普通闲聊或临时过程信息。
 - 如果不确定一段问答是否值得保存，可以询问用户，或先写入 `_inbox` 等待后续整理。
 - 不要保存密钥、token、账号、客户数据、隐私信息或其他敏感内容。
+- 保存时记录源码 commit 和工作区是否有未提交改动。工作区有改动时，HEAD 不能完整代表笔记依据，应在正文说明额外查看了哪些改动。
+- AI 生成的笔记默认 `needs-verification`；只有人工核对证据后才标记 `verified`。
 
 ## 推荐 Obsidian 目录结构
 
@@ -228,6 +231,9 @@ related_files: []
 related_symbols: []
 related_notes: []
 confidence: high | medium | low
+source_commit: <full git commit sha>
+source_captured_at: <ISO 8601 time>
+source_worktree_dirty: false
 ---
 ```
 
@@ -243,7 +249,7 @@ repo_path: <repo_path>
 title: <short question>
 created: YYYY-MM-DD
 updated: YYYY-MM-DD
-status: verified
+status: needs-verification
 source_tools: [<source_tool>]
 tags: [code-atlas, repo/<repo_id>, qa]
 related_files: []
@@ -290,7 +296,7 @@ repo_path: <repo_path>
 title: <investigation title>
 created: YYYY-MM-DD
 updated: YYYY-MM-DD
-status: verified
+status: needs-verification
 source_tools: [<source_tool>]
 tags: [code-atlas, repo/<repo_id>, investigation]
 related_files: []
@@ -336,7 +342,7 @@ repo_path: <repo_path>
 title: <decision title>
 created: YYYY-MM-DD
 updated: YYYY-MM-DD
-status: accepted
+status: needs-verification
 source_tools: [<source_tool>]
 tags: [code-atlas, repo/<repo_id>, decision]
 related_files: []
@@ -416,6 +422,7 @@ node /Users/dubingnan/workCode/xichengpro/wiki-obsidian-hook/bin/obsidian-code-a
 4. 尽量加入 `file:line` 形式的源码证据。
 5. 链接到仓库索引、相关模块、相关符号和历史 Q&A。
 6. 如果结论未经验证，设置 `status: needs-verification` 和 `confidence: low`。
+7. 确认 `source_commit` 是实际阅读时的版本；若工作区有未提交改动，在笔记中单独说明。
 
 ## 工作流：更新已有知识
 
@@ -449,6 +456,20 @@ node /Users/dubingnan/workCode/xichengpro/wiki-obsidian-hook/bin/obsidian-code-a
   "related_files": ["src/a.ts:10"]
 }
 ```
+
+## 分享到 Team Code Wiki
+
+仅在用户明确要求共享某篇笔记时，使用 Team Wiki 仓库中的发布命令。先检查笔记内容、源码依据和本地绝对路径；不要批量发布整个个人 Vault。
+
+```bash
+node /Users/dubingnan/workCode/team-code-wiki/bin/team-code-wiki.js publish \
+  --note "/absolute/path/to/CodeAtlas/repositories/<repo_id>/qa/example.md" \
+  --code-repo "/absolute/path/to/source/repo" \
+  --wiki "/Users/dubingnan/workCode/team-code-wiki" \
+  --push
+```
+
+发布器按仓库归档笔记、校验源码 commit，并将 Wiki 页提交到 Git。旧笔记没有 `source_commit` 时，必须用 `--ref <commit>` 指定实际阅读的版本；不要把当前 HEAD 冒充历史阅读版本。Team Wiki 页自己的 commit 由 Git 历史产生，使用 `provenance --page <wiki-page>` 查询。
 
 ## 输出要求
 
