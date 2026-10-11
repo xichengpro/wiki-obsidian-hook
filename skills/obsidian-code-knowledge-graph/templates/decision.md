@@ -13,6 +13,9 @@ related_files: {{related_files}}
 related_symbols: {{related_symbols}}
 related_notes: []
 confidence: {{confidence}}
+source_commit: {{source_commit}}
+source_captured_at: {{source_captured_at}}
+source_worktree_dirty: {{source_worktree_dirty}}
 ---
 
 # {{title}}

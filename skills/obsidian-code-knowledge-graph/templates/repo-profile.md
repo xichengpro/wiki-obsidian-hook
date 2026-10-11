@@ -11,6 +11,9 @@ tags: [code-atlas, repo/{{repo_id}}, profile]
 related_files: []
 related_symbols: []
 confidence: medium
+source_commit: {{source_commit}}
+source_captured_at: {{source_captured_at}}
+source_worktree_dirty: {{source_worktree_dirty}}
 ---
 
 # 仓库画像
